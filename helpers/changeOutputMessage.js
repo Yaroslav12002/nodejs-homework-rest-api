@@ -11,6 +11,10 @@ const changeOutputMessage = (message) => {
     outputMessage = "missing fields";
   }
 
+  if (message.includes('"favorite" is required')) {
+    outputMessage = "missing field favorite";
+  }
+
   return outputMessage;
 };
 
