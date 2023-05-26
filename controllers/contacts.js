@@ -43,7 +43,6 @@ const updateById = async (req, res) => {
 
 const updateFavorite = async (req, res) => {
   const { contactId } = req.params;
-  console.log(contactId);
   const data = await Contact.findByIdAndUpdate(contactId, req.body, {
     new: true,
   });
