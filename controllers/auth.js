@@ -12,7 +12,7 @@ const register = async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user) {
-    throw HttpError(409, "Email already in use");
+    throw HttpError(409, "Email in use");
   }
 
   const hashPassword = await bcrypt.hash(password, 10);
@@ -27,22 +27,51 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-  const user = User.findOne(email);
+  const user = await User.findOne({ email });
   if (!user) {
-    throw HttpError(401, "Invalid email or password");
+    throw HttpError(401, "Email or password is wrong");
   }
-  const passwordCompare = bcrypt.compare(password, user.password);
+
+  const passwordCompare = await bcrypt.compare(password, user.password);
+
   if (!passwordCompare) {
-    throw HttpError(401, "Invalid email or password");
+    throw HttpError(401, "Email or password is wrong");
   }
+
   const payload = {
     id: user._id,
   };
+
+  const { subscription } = user;
   const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "23h" });
-  res.json({ token });
+  await User.findByIdAndUpdate(user._id, { token });
+
+  res.json({ token, user: { email, subscription } });
+};
+
+const getCurrent = (req, res) => {
+  const { email, subscription } = req.user;
+  res.json({ email, subscription });
+};
+
+const logout = async (req, res) => {
+  const { _id } = req.user;
+  await User.findByIdAndUpdate(_id, { token: "" });
+  res.status(204).json({ message: "Logout success" });
+};
+
+const users = async (req, res) => {
+  const { _id, email } = req.user;
+  const { subscription } = req.body;
+  await User.findByIdAndUpdate(_id, { subscription });
+
+  res.json({ user: { email, subscription } });
 };
 
 module.exports = {
   register: ctrlWrapper(register),
   login: ctrlWrapper(login),
+  getCurrent: ctrlWrapper(getCurrent),
+  logout: ctrlWrapper(logout),
+  users: ctrlWrapper(users),
 };
